@@ -1,0 +1,75 @@
+name: Build Medicine App
+
+on:
+  # Manual trigger only (uncomment below to enable automatic builds on push)
+  # push:
+  #   branches:
+  #     - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      
+      # Optional caching - safe fallback if cache fails
+      - name: Cache Flutter Dependencies
+        uses: actions/cache@v3
+        continue-on-error: true
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: ${{ runner.os }}-pub-
+      
+      - name: Install Dependencies
+        run: flutter pub get
+      
+      # Hive code generation - always runs
+      - name: Run Hive Code Generator
+        run: dart run build_runner build --delete-conflicting-outputs
+      
+      - name: Build ARM64 APK
+        run: flutter build apk --release --target-platform android-arm64
+      
+      # Versioning (commented - uncomment when MVP is ready)
+      # - name: Get Version Info
+      #   id: version
+      #   run: |
+      #     echo "BUILD_NUMBER=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
+      #     echo "COMMIT_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      
+      # Rename APK (commented - uncomment when MVP is ready)
+      # - name: Rename APK
+      #   run: |
+      #     mv build/app/outputs/flutter-apk/app-release.apk \
+      #        build/app/outputs/flutter-apk/medicine-reminder-v0.0.${{ steps.version.outputs.BUILD_NUMBER }}-arm64.apk
+      
+      - name: Create Alpha Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: alpha-latest
+          name: Alpha Build (Unstable)
+          prerelease: true
+          draft: true
+          body: |
+            **Commit:** ${{ github.sha }}
+            **Branch:** ${{ github.ref_name }}
+            **Message:** ${{ github.event.head_commit.message }}
+          files: build/app/outputs/flutter-apk/app-release.apk
+          # When using versioning, change files line to:
+          # files: build/app/outputs/flutter-apk/medicine-reminder-*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
