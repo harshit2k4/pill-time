@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:pill_time/features/home/controllers/dose_controller.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -36,11 +37,23 @@ class NotificationService {
       linux: linuxSettings,
     );
 
-    await _notificationsPlugin.initialize(settings);
-    // ONLY check permissions if we are on Android or iOS
+    // await _notificationsPlugin.initialize(settings);
+    // // ONLY check permissions if we are on Android or iOS
     if (GetPlatform.isAndroid || GetPlatform.isIOS) {
       await _checkExactAlarmPermission();
     }
+
+    await _notificationsPlugin.initialize(
+      settings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // This runs when the user taps the notification
+        // It ensures the app opens to the home screen and refreshes doses
+        Get.offAllNamed('/');
+        if (Get.isRegistered<DoseController>()) {
+          Get.find<DoseController>().refreshPendingDoses();
+        }
+      },
+    );
   }
 
   static Future<void> _checkExactAlarmPermission() async {
