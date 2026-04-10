@@ -11,11 +11,15 @@ class DoseLogModel extends HiveObject {
   DateTime logTime;
 
   @HiveField(2)
-  String status; // taken, skipped, missed
+  String status;
+
+  @HiveField(3)
+  String medicineName;
 
   DoseLogModel({
     required this.medicineId,
     required this.logTime,
     required this.status,
+    required this.medicineName,
   });
 }
