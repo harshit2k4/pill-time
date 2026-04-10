@@ -130,15 +130,35 @@ class AddMedicineView extends StatelessWidget {
               const SizedBox(height: 16),
 
               // Stock Field
-              TextFormField(
-                controller: controller.stockController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Total Inventory / Stock',
-                  hintText: 'e.g. 30 (pills or ml)',
-                  border: OutlineInputBorder(),
+              // TextFormField(
+              //   controller: controller.stockController,
+              //   keyboardType: TextInputType.number,
+              //   decoration: const InputDecoration(
+              //     labelText: 'Total Inventory / Stock',
+              //     hintText: 'e.g. 30 (pills or ml)',
+              //     border: OutlineInputBorder(),
+              //   ),
+              //   validator: (val) => val!.isEmpty ? 'Required' : null,
+              // ),
+              Obx(
+                () => TextFormField(
+                  controller: controller.stockController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Current Total Stock',
+                    // NEW: Helper text explains the unit to the user
+                    helperText:
+                        (controller.selectedUnit.value == 'ml' ||
+                            controller.selectedUnit.value == 'drops')
+                        ? 'Enter total ML available in the bottle'
+                        : 'Enter total number of pills available',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.inventory_2),
+                  ),
+                  validator: (val) => val!.isEmpty ? 'Required' : null,
                 ),
-                validator: (val) => val!.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
 
