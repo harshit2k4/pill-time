@@ -22,20 +22,61 @@ class HistoryController extends GetxController {
   }
 
   void clearHistory() {
-    Get.defaultDialog(
-      title: 'Clear History',
-      middleText:
-          'Are you sure you want to delete all dose logs? This cannot be undone.',
-      textConfirm: 'Clear',
-      textCancel: 'Cancel',
-      confirmTextColor: Colors.white,
-      onConfirm: () async {
-        final logBox = Hive.box<DoseLogModel>(AppStrings.boxLogs);
-        await logBox.clear(); // This deletes everything in the box
-        loadLogs(); // Refresh the empty list
-        Get.back(); // Close the dialog
-        Get.snackbar('History Cleared', 'All past logs have been removed.');
-      },
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                size: 48,
+                color: Colors.redAccent,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Clear History',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Are you sure you want to delete all dose logs? This cannot be undone.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                    ),
+                    onPressed: () async {
+                      final logBox = Hive.box<DoseLogModel>(AppStrings.boxLogs);
+                      await logBox.clear();
+                      loadLogs();
+                      Get.back();
+                      Get.snackbar(
+                        'History Cleared',
+                        'All past logs have been removed.',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    },
+                    child: const Text('Clear All'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
