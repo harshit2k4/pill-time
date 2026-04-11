@@ -8,6 +8,8 @@ import '../../../data/models/dose_log_model.dart';
 import '../../../core/constants/app_strings.dart';
 import 'dart:math' as math;
 
+import 'home_controller.dart';
+
 class DueDose {
   final MedicineModel medicine;
   final DateTime scheduledTime;
@@ -129,6 +131,9 @@ class DoseController extends GetxController {
       await dose.medicine.save();
 
       refreshPendingDoses();
+      if (Get.isRegistered<HomeController>()) {
+        Get.find<HomeController>().loadMedicines();
+      }
     } finally {
       isLoading.value = false; // Stop loading state
     }

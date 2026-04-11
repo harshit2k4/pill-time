@@ -76,37 +76,78 @@ class HomeController extends GetxController {
   }
 
   // Refill Dialog
+  // BETTER UI: Refill Dialog
   void showRefillDialog(MedicineModel medicine) {
     final textController = TextEditingController();
 
-    // Determine the logical refill unit
     String refillUnit =
         (medicine.type == 'Liquid' || medicine.type == 'Homeopathic')
         ? 'ml'
         : medicine.doseUnit;
 
-    Get.defaultDialog(
-      title: 'Refill ${medicine.name}',
-      content: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: TextField(
-          controller: textController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: 'Amount added in $refillUnit',
-            border: const OutlineInputBorder(),
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.add_shopping_cart,
+                size: 48,
+                color: Theme.of(Get.context!).colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Refill ${medicine.name}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: textController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Amount added in $refillUnit',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () async {
+                      double addedAmount =
+                          double.tryParse(textController.text) ?? 0.0;
+                      if (addedAmount > 0) {
+                        medicine.stockQuantity += addedAmount;
+                        await medicine.save();
+                        loadMedicines();
+                        Get.back();
+                      }
+                    },
+                    child: const Text('Refill'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
-      onConfirm: () async {
-        double addedAmount = double.tryParse(textController.text) ?? 0.0;
-        if (addedAmount > 0) {
-          medicine.stockQuantity += addedAmount;
-          await medicine.save();
-          loadMedicines();
-          Get.back();
-        }
-      },
     );
   }
 }
