@@ -37,10 +37,8 @@ class NotificationService {
       linux: linuxSettings,
     );
 
-    // await _notificationsPlugin.initialize(settings);
-    // // ONLY check permissions if we are on Android or iOS
     if (GetPlatform.isAndroid || GetPlatform.isIOS) {
-      await _checkExactAlarmPermission();
+      await _checkPermissions();
     }
 
     await _notificationsPlugin.initialize(
@@ -56,11 +54,50 @@ class NotificationService {
     );
   }
 
-  static Future<void> _checkExactAlarmPermission() async {
-    // Exact alarms are required for medicine reminders to be precise.
+  static Future<void> _checkPermissions() async {
+    // Base Notifications
+    if (await Permission.notification.isDenied) {
+      await Permission.notification.request();
+    }
+
+    // Display Over Other Apps (SYSTEM_ALERT_WINDOW)
+    // This is required for MIUI to allow background popups
+    if (await Permission.systemAlertWindow.isDenied) {
+      await Permission.systemAlertWindow.request();
+    }
+
+    // Exact Alarms
     if (await Permission.scheduleExactAlarm.isDenied) {
       _showPermissionDialog();
     }
+
+    if (await Permission.systemAlertWindow.isDenied) {
+      _showOverlayDialog();
+    }
+  }
+
+  static void _showOverlayDialog() {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Screen Wakeup Needed'),
+        content: const Text(
+          'To show you alarms even when you are using other apps or when the screen is locked, '
+          'we need the "Display over other apps" permission. '
+          '\n\nPlease allow this in the next screen so you never miss a dose.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Later')),
+          FilledButton(
+            onPressed: () async {
+              Get.back();
+              await Permission.systemAlertWindow.request();
+            },
+            child: const Text('Allow Overlay'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
   }
 
   static void _showPermissionDialog() {
@@ -105,14 +142,22 @@ class NotificationService {
   }
 
   static Future<void> scheduleMedicineAlarm(MedicineModel medicine) async {
+    // CRITICAL FIX 1: We changed the channel ID from 'medicine_reminders' to 'pill_alarms_v1'
+    // This forces Android to forget the old silent rules and create a new loud channel.
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-          'medicine_reminders',
-          'Medicine Reminders',
-          channelDescription: 'Alarms for scheduled medicines',
+          'pill_alarms_v1',
+          'Critical Medicine Alarms',
+          channelDescription: 'Loud alarms for scheduled medicines',
           importance: Importance.max,
-          priority: Priority.high,
+          priority: Priority.max,
           fullScreenIntent: true,
+          // CRITICAL FIX 2: Categorize this strictly as an alarm
+          category: AndroidNotificationCategory.alarm,
+          audioAttributesUsage: AudioAttributesUsage.alarm,
+          visibility: NotificationVisibility.public,
+          playSound: true,
+          enableVibration: true,
         );
 
     const NotificationDetails platformChannelSpecifics = NotificationDetails(
@@ -136,8 +181,6 @@ class NotificationService {
           matchDateTimeComponents: DateTimeComponents.time,
           payload: medicine.id,
         );
-      } else {
-        debugPrint('Skipped alarm scheduling on Linux for: ${medicine.name}');
       }
     }
   }
